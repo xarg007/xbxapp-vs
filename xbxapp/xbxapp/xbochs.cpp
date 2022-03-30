@@ -108,14 +108,14 @@ bxInstruction_c::~bxInstruction_c()
 
 void bxInstruction_c::setRexPrefix(uint8_t rex)
 {
-    m_ins.rex_prefix[0] = rex;              // 原本的字节码
-    m_ins.rex_prefix[1] = (rex >> 4) & 0x0f;    // 只保留高四位 应为0x04;
-    m_ins.rex_prefix[2] = rex & 0xf0;        // 只保留高四位 应为0x40;
-    m_ins.rex_prefix[3] = 0x00;
-    m_ins.rex_prefix[4] = (rex & 0x08) != 0x00; // 取rex.w
-    m_ins.rex_prefix[5] = (rex & 0x08) != 0x00; // 取rex.r
-    m_ins.rex_prefix[6] = (rex & 0x08) != 0x00; // 取rex.x
-    m_ins.rex_prefix[7] = (rex & 0x08) != 0x00; // 取rex.b
+    //m_ins.rex_prefix[0] = rex;              // 原本的字节码
+    //m_ins.rex_prefix[1] = (rex >> 4) & 0x0f;    // 只保留高四位 应为0x04;
+    //m_ins.rex_prefix[2] = rex & 0xf0;        // 只保留高四位 应为0x40;
+    //m_ins.rex_prefix[3] = 0x00;
+    //m_ins.rex_prefix[4] = (rex & 0x08) != 0x00; // 取rex.w
+    //m_ins.rex_prefix[5] = (rex & 0x08) != 0x00; // 取rex.r
+    //m_ins.rex_prefix[6] = (rex & 0x08) != 0x00; // 取rex.x
+    //m_ins.rex_prefix[7] = (rex & 0x08) != 0x00; // 取rex.b
 }
 
 CMyBochsCpu_t::CMyBochsCpu_t()
@@ -197,7 +197,7 @@ void bxInstruction_c::setLegacyPrefix(uint8_t legacy_prefix)
     case 0xF2:
     case 0xF3:
     {
-        m_ins.legacy_prefixes[0] = legacy_prefix;
+        //m_ins.legacy_prefixes[0] = legacy_prefix;
         break;
     }
     //group 2;
@@ -208,19 +208,19 @@ void bxInstruction_c::setLegacyPrefix(uint8_t legacy_prefix)
     case 0x64:
     case 0x65:
     {
-        m_ins.legacy_prefixes[1] = legacy_prefix;
+        //m_ins.legacy_prefixes[1] = legacy_prefix;
         break;
     }
     //group 3;
     case 0x66:
     {
-        m_ins.legacy_prefixes[2] = legacy_prefix;
+        //m_ins.legacy_prefixes[2] = legacy_prefix;
         break;
     }
     //broup 4;
     case 0x67:
     {
-        m_ins.legacy_prefixes[3] = legacy_prefix;
+        //m_ins.legacy_prefixes[3] = legacy_prefix;
         break;
     }
     default:
@@ -231,11 +231,11 @@ void bxInstruction_c::setLegacyPrefix(uint8_t legacy_prefix)
 
     for (int i = 0; i < 4; i++)
     {
-        if (m_ins.legacy_prefixes[4 + i] == 0)
-        {
-            m_ins.legacy_prefixes[4 + i] = legacy_prefix;
-            break;
-        }
+        //if (m_ins.legacy_prefixes[4 + i] == 0)
+        //{
+        //    m_ins.legacy_prefixes[4 + i] = legacy_prefix;
+        //    break;
+        //}
     }
 }
 
@@ -250,12 +250,42 @@ void bxInstruction_c::setILen(unsigned ilen)
 }
 
 
+enum BxDecodeError
+{
+    BX_DECODE_OK = 0,
+    BX_ILLEGAL_OPCODE,
+    BX_ILLEGAL_LOCK_PREFIX,
+    BX_ILLEGAL_VEX_XOP_VVV,
+    BX_ILLEGAL_VEX_XOP_WITH_SSE_PREFIX,
+    BX_ILLEGAL_VEX_XOP_WITH_REX_PREFIX,
+    BX_ILLEGAL_VEX_XOP_OPCODE_MAP,
+    BX_VEX_XOP_BAD_VECTOR_LENGTH,
+    BX_VSIB_FORBIDDEN_ASIZE16,
+    BX_VSIB_ILLEGAL_SIB_INDEX,
+    BX_EVEX_RESERVED_BITS_SET,
+    BX_EVEX_ILLEGAL_EVEX_B_SAE_NOT_ALLOWED,
+    BX_EVEX_ILLEGAL_EVEX_B_BROADCAST_NOT_ALLOWED,
+    BX_EVEX_ILLEGAL_KMASK_REGISTER,
+    BX_EVEX_ILLEGAL_ZERO_MASKING_WITH_KMASK_SRC_OR_DEST,
+    BX_EVEX_ILLEGAL_ZERO_MASKING_VSIB,
+    BX_EVEX_ILLEGAL_ZERO_MASKING_MEMORY_DESTINATION,
+};
 
 ////////////////////////////////////////////////////////////////////////////
 //#define BX_CONST64(x)  (x)
 // const Bit64u ATTR_LAST_OPCODE = BX_CONST64(0x8000000000000000);
 //#define last_opcode_lockable(attr, ia_opcode)       ((attr) | (Bit64u(ia_opcode) << 48) | ATTR_LAST_OPCODE)
 //==========================================================================
+
+BxDecodeError assign_srcs(bxInstruction_c* i, unsigned ia_opcode, unsigned nnn, unsigned rm)
+{
+    return BX_DECODE_OK;
+}
+
+int fetchImmediate(const Bit8u* iptr, unsigned& remain, bxInstruction_c* i, Bit16u ia_opcode, bool is_64)
+{
+    return 0;
+}
 
 Bit16u findOpcode(const Bit64u* opMap, Bit32u decmask)
 {
@@ -277,10 +307,225 @@ Bit16u findOpcode(const Bit64u* opMap, Bit32u decmask)
     return ia_opcode;
 }
 
+struct bx_modrm
+{
+    unsigned modrm, mod, nnn, rm;
+};
+
+const Bit8u* decodeModrm64(
+    const Bit8u* iptr, unsigned& remain, bxInstruction_c* i,
+    unsigned mod, unsigned nnn, unsigned rm,
+    unsigned rex_r, unsigned rex_x, unsigned rex_b)
+{
+    //unsigned seg = BX_SEG_REG_DS;
+#if 0
+    unsigned seg = BX_SEG_REG_DS;
+
+    i->setSibBase(rm & 0xf); // initialize with rm to use BxResolve64Base
+    i->setSibIndex(4);
+
+    // initialize displ32 with zero to include cases with no diplacement
+    i->modRMForm.displ32u = 0;
+
+    // note that mod==11b handled outside
+    if ((rm & 0x7) != 4)
+    { // no s-i-b byte
+        if (mod == 0x00)
+        { // mod == 00b
+            if ((rm & 0x7) == 5)
+            {
+                i->setSibBase(BX_64BIT_REG_RIP);
+                goto get_32bit_displ;
+            }
+            // mod==00b, rm!=4, rm!=5
+            goto modrm_done;
+        }
+        // (mod == 0x40), mod==01b or (mod == 0x80), mod==10b
+        seg = sreg_mod1or2_base32[rm & 0xf];
+    }
+    else
+    {
+        // mod!=11b, rm==4, s-i-b byte follows
+        unsigned sib, base, index, scale;
+        if (remain != 0)
+        {
+            sib = *iptr++;
+            remain--;
+        }
+        else
+        {
+            return NULL;
+        }
+
+        base = (sib & 0x7) | rex_b;
+        sib >>= 3;
+
+        index = (sib & 0x7) | rex_x;
+        sib >>= 3;
+
+        scale = sib;
+
+        i->setSibScale(scale);
+        i->setSibBase(base & 0xf);
+        // this part is a little tricky - assign index value always,
+        // it will be really used if the instruction is Gather. Others
+        // assume that resolve function will do the right thing.
+        i->setSibIndex(index & 0xf);
+
+        if (mod == 0x00)
+        {
+            // mod==00b, rm==4
+            seg = sreg_mod0_base32[base & 0xf];
+            if ((base & 0x7) == 5)
+            {
+                i->setSibBase(BX_NIL_REGISTER);
+                goto get_32bit_displ;
+            }
+            // mod==00b, rm==4, base!=5
+            goto modrm_done;
+        }
+
+        // (mod == 0x40), mod==01b or (mod == 0x80), mod==10b
+        seg = sreg_mod1or2_base32[base & 0xf];
+    }
+
+    // (mod == 0x40), mod==01b
+    if (mod == 0x40)
+    {
+        if (remain != 0)
+        {
+            // 8 sign extended to 32
+            i->modRMForm.displ32u = (Bit8s)*iptr++;
+            remain--;
+        }
+        else
+        {
+            return NULL;
+        }
+    }
+    else
+    {
+
+    get_32bit_displ:
+        // (mod == 0x80), mod==10b
+        if (remain > 3)
+        {
+            i->modRMForm.displ32u = FetchDWORD(iptr);
+            iptr += 4;
+            remain -= 4;
+        }
+        else
+        {
+            return NULL;
+        }
+    }
+
+modrm_done:
+
+    i->setSeg(seg);
+    return iptr;
+#endif
+
+    return NULL;
+}
+
+/*
+REX prefix用于一组16个Opcode，Prefix值范围为40H到4FH。
+正常情况下40H-48H代表INC指令，49H-4FH代表DEC指令，而在64位模式下，它们表示REX prefix；
+INC和DEC指令通过使用ModR/MOpcode部分表达：“FF /0” – INC, “FF/1” – DEC REX。
+Prefix的定义如下：
+    Bit[7:4] ：0100b，0x4_用于表示REX Prefix
+    Bit[3]：W, 0 = 操作数由CS.D（Code Segment，0=16bit操作数，1=32bit操作数）决定，
+               1 = 64bit操作数，所以REX prefix >= 48H时一定为64bit操作数
+    Bit[2]：R，ModR/M reg bit[3]扩展位
+    Bit[1]：X，SIB Index bit[3]扩展位
+    Bit[0]：B，ModR/M r/m bit[3]扩展位，或SIB bit[3]Base扩展位，或OpCode Reg bit[3]扩展位
+
+寄存器寻址（没有内存操作数）时：REX.X不使用，REX.R作为ModR/M Reg bit[3]，REX.B作为ModR/M r/m bit[3]
+内存选址没有SIB扩展时：REX.X不使用，REX.R作为ModR/M Reg bit[3]，REX.B作为ModR/M r/m bit[3]
+内存选址有SIB扩展时：REX.X作为SIB.Indexbit[3]，REX.R作为ModR/M Reg bit[3]，REX.B作为SIB base bit[3]
+寄存器操作时：REX.R和REX.X不使用，REX.B作为OpCode Reg bit[3]
+*/
+
+const Bit8u* parseModRM64(const Bit8u* iptr, unsigned& remain, bxInstruction_c* i, unsigned rex_prefix, struct bx_modrm* modrm)
+{
+    unsigned rex_w = 0, rex_r = 0, rex_x = 0, rex_b = 0;
+    if (rex_prefix)
+    {
+        rex_w = ((rex_prefix & 0x8) << 0);
+        rex_r = ((rex_prefix & 0x4) << 1);
+        rex_x = ((rex_prefix & 0x2) << 2);
+        rex_b = ((rex_prefix & 0x1) << 3);
+    }
+
+    // opcode requires modrm byte
+    if (remain == 0)
+        return NULL;
+
+    // 取得modRM字节
+    remain--;
+    unsigned b2 = *iptr++;
+
+    // Keep original modrm byte
+    modrm->modrm = b2;
+
+    // Parse mod-nnn-rm and related bytes
+    modrm->mod = b2 & 0xc0;
+    modrm->nnn = ((b2 >> 3) & 0x7) | rex_r;
+    modrm->rm = (b2 & 0x7) | rex_b;
+
+    if (modrm->mod == 0xc0) //=>1100 0000
+    {
+        // mod == 11b
+        // i->assertModC0();
+    }
+    else
+    {
+        //iptr = decodeModrm64(iptr, remain, i, modrm->mod, modrm->nnn, modrm->rm, rex_r, rex_x, rex_b);
+    }
+
+
+    return iptr;
+}
+
 int decoder64_modrm(const Bit8u* iptr, unsigned& remain, bxInstruction_c* i, unsigned b1, unsigned sse_prefix, unsigned rex_prefix, const void* opcode_table)
 {
     xlog_info("  >> func:%s() called;(line:%d@%s)\n", __func__, __LINE__, __FILE__TMP_);
-    return 0;
+    struct bx_modrm modrm;
+    iptr = parseModRM64(iptr, remain, i, rex_prefix, &modrm);
+    if (!iptr)
+    {
+        return (-1);
+    }
+
+    Bit32u decmask = 0;
+
+    //Bit32u decmask = (
+    //    (1 << IS64_OFFSET)) |
+    //    (i->osize() << OS32_OFFSET) |
+    //    (i->asize() << AS32_OFFSET) |
+    //    (sse_prefix << SSE_PREFIX_OFFSET) |
+    //    (i->modC0() ? (1 << MODC0_OFFSET) : 0) |
+    //    ((modrm.nnn & 0x7) << NNN_OFFSET) |
+    //    ((modrm.rm & 0x7) << RRR_OFFSET);
+    //
+    //if (i->modC0() && modrm.nnn == modrm.rm)
+    //{
+    //    decmask |= (1 << SRC_EQ_DST_OFFSET);
+    //}
+
+    //从表二中查找操作码索引；
+    Bit16u ia_opcode = findOpcode((const Bit64u*)opcode_table, decmask);
+
+    if (fetchImmediate(iptr, remain, i, ia_opcode, true) < 0)
+    //{
+    //    return (-1);
+    //}
+    //
+    assign_srcs(i, ia_opcode, modrm.nnn, modrm.rm);
+
+    return ia_opcode;
+
 }
 
 int decoder64(const Bit8u* iptr, unsigned& remain, bxInstruction_c* i, unsigned b1, unsigned sse_prefix, unsigned rex_prefix, const void* opcode_table)
@@ -721,7 +966,7 @@ BxOpcodeDecodeDescriptor64 decode64_descriptor[] = {
     /*       2E => 0x002E*/ {&decoder64, NULL},  //BxOpcodeTable2E},
     /*       2F => 0x002F*/ {&decoder64, NULL},  //BxOpcodeTable2F},
     /*       30 => 0x0030*/ {&decoder64, NULL},  //BxOpcodeTable30},
-    /*       31 => 0x0031*/ {&decoder64, BxOpcodeTable31},
+    /*       31 => 0x0031*/ {&decoder64_modrm, BxOpcodeTable31},
     /*       32 => 0x0032*/ {&decoder64, NULL},  //BxOpcodeTable32},
     /*       33 => 0x0033*/ {&decoder64, NULL},  //BxOpcodeTable33},
     /*       34 => 0x0034*/ {&decoder64, NULL},  //BxOpcodeTable34},

@@ -32,17 +32,30 @@ public:
 public:
     struct S_Instr_t
     {
-        uint8_t rex_prefix[8];      //64位新增前缀
+        union
+        {
+            uint8_t rex_prefix;      //64位新增前缀
+            struct rex_pre
+            {
+                uint8_t rex_p : 4;
+                uint8_t rex_w : 1;
+                uint8_t rex_r : 1;
+                uint8_t rex_x : 1;
+                uint8_t rex_b : 1;
+            }x;
+        }rex_px;
+
         uint8_t legacy_prefixes[8]; //兼容前缀 四组 [legacy_prefix_g1:(F0|F2|F3|)]
                                     //              [legacy_prefix_g2:(2E|3E|26|36|64|65)]
                                     //              [legacy_prefix_g3:(66)]
                                     //              [legacy_prefix_g4:(67)]
+
         uint8_t opcode[8];          //操作码
         uint8_t modRM[8];           //？[rex.?][mod][reg/opcode_ex][r/m]
         uint8_t SIB[8];             //? [rex.?][base][idx][offset]
         uint8_t Disp[8];            //偏移
         uint8_t Immed[8];           //立即数
-    }m_ins = { 0 };
+    }m_ins_t = { 0 };
     uint8_t m_opcode[16] = { 0 };     //本条指令全字节码
 
     uint32_t m_iLen = 0;
